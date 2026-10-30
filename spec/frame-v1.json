@@ -1,0 +1,668 @@
+{
+  "spec": "Gnimu frame",
+  "version": 1,
+  "status": "draft",
+  "frame_bytes": 164,
+  "field_count": 60,
+  "types": {
+    "u8": 1,
+    "i16": 2,
+    "u16": 2,
+    "i32": 4,
+    "f64": 8,
+    "mask64": 8,
+    "u8x2": 2
+  },
+  "header": [
+    {
+      "key": "device_time_ms",
+      "name": "Device time",
+      "offset": 0,
+      "type": "i32",
+      "scale": 1,
+      "unit": "ms since boot, monotonic, never adjusted; wraps after 2^31 ms (about 24.8 days)"
+    },
+    {
+      "key": "sequence",
+      "name": "Sequence",
+      "offset": 4,
+      "type": "u8",
+      "scale": 1,
+      "unit": "counts up by one per frame, wraps at 255; a gap means a lost frame"
+    },
+    {
+      "key": "spec_version",
+      "name": "Spec version",
+      "offset": 5,
+      "type": "u8",
+      "scale": 1,
+      "unit": "1"
+    },
+    {
+      "key": "device_type",
+      "name": "Device type",
+      "offset": 6,
+      "type": "u8",
+      "scale": 1,
+      "unit": "1 Gnimu, 2 Gnimu-CAN, 3 all-in-one"
+    },
+    {
+      "key": "state",
+      "name": "State",
+      "offset": 7,
+      "type": "u8",
+      "scale": 1,
+      "unit": "0 unknown, 1 starting, 2 running, 3 waiting, 4 fault"
+    },
+    {
+      "key": "valid_mask",
+      "name": "Valid mask",
+      "offset": 8,
+      "type": "mask64",
+      "scale": null,
+      "unit": "bit n set: field n holds a real value"
+    },
+    {
+      "key": "fresh_mask",
+      "name": "Fresh mask",
+      "offset": 16,
+      "type": "mask64",
+      "scale": null,
+      "unit": "bit n set: field n changed since the previous frame"
+    }
+  ],
+  "blocks": [
+    {
+      "key": "gnss",
+      "name": "GNSS",
+      "offset": 24,
+      "bytes": 60,
+      "fields": [
+        {
+          "number": 0,
+          "key": "latitude",
+          "name": "Latitude",
+          "offset": 24,
+          "type": "f64",
+          "scale": 1,
+          "unit": "degrees, WGS84"
+        },
+        {
+          "number": 1,
+          "key": "longitude",
+          "name": "Longitude",
+          "offset": 32,
+          "type": "f64",
+          "scale": 1,
+          "unit": "degrees, WGS84"
+        },
+        {
+          "number": 2,
+          "key": "altitude_msl",
+          "name": "Altitude above mean sea level",
+          "offset": 40,
+          "type": "i32",
+          "scale": 1000,
+          "unit": "m (mm resolution)"
+        },
+        {
+          "number": 3,
+          "key": "height_ellipsoid",
+          "name": "Height above ellipsoid",
+          "offset": 44,
+          "type": "i32",
+          "scale": 1000,
+          "unit": "m (mm resolution)"
+        },
+        {
+          "number": 4,
+          "key": "ground_speed",
+          "name": "Ground speed",
+          "offset": 48,
+          "type": "u16",
+          "scale": 100,
+          "unit": "km/h (to 655.35)"
+        },
+        {
+          "number": 5,
+          "key": "heading",
+          "name": "Heading of motion",
+          "offset": 50,
+          "type": "u16",
+          "scale": 100,
+          "unit": "degrees clockwise from true north"
+        },
+        {
+          "number": 6,
+          "key": "vertical_velocity",
+          "name": "Vertical velocity",
+          "offset": 52,
+          "type": "i16",
+          "scale": 100,
+          "unit": "m/s, down positive"
+        },
+        {
+          "number": 7,
+          "key": "horizontal_accuracy",
+          "name": "Horizontal accuracy",
+          "offset": 54,
+          "type": "u16",
+          "scale": 1000,
+          "unit": "m (saturates at 65.535)"
+        },
+        {
+          "number": 8,
+          "key": "vertical_accuracy",
+          "name": "Vertical accuracy",
+          "offset": 56,
+          "type": "u16",
+          "scale": 1000,
+          "unit": "m (saturates at 65.535)"
+        },
+        {
+          "number": 9,
+          "key": "speed_accuracy",
+          "name": "Speed accuracy",
+          "offset": 58,
+          "type": "u16",
+          "scale": 100,
+          "unit": "km/h"
+        },
+        {
+          "number": 10,
+          "key": "heading_accuracy",
+          "name": "Heading accuracy",
+          "offset": 60,
+          "type": "u16",
+          "scale": 100,
+          "unit": "degrees (saturates at 655.35)"
+        },
+        {
+          "number": 11,
+          "key": "pdop",
+          "name": "PDOP",
+          "offset": 62,
+          "type": "u16",
+          "scale": 100,
+          "unit": "—"
+        },
+        {
+          "number": 12,
+          "key": "fix_type",
+          "name": "Fix type",
+          "offset": 64,
+          "type": "u8",
+          "scale": 1,
+          "unit": "0 none, 2 2D, 3 3D, 4 GNSS + dead reckoning, 5 time only"
+        },
+        {
+          "number": 13,
+          "key": "satellites",
+          "name": "Satellites used",
+          "offset": 65,
+          "type": "u8",
+          "scale": 1,
+          "unit": "count"
+        },
+        {
+          "number": 14,
+          "key": "gnss_time_of_week",
+          "name": "GNSS time of week",
+          "offset": 66,
+          "type": "i32",
+          "scale": 1,
+          "unit": "ms"
+        },
+        {
+          "number": 15,
+          "key": "utc_date",
+          "name": "UTC date",
+          "offset": 70,
+          "type": "i32",
+          "scale": 1,
+          "unit": "YYYYMMDD, e.g. 20261030"
+        },
+        {
+          "number": 16,
+          "key": "utc_time",
+          "name": "UTC time of day",
+          "offset": 74,
+          "type": "i32",
+          "scale": 1,
+          "unit": "ms since midnight"
+        },
+        {
+          "number": 17,
+          "key": "time_accuracy",
+          "name": "Time accuracy",
+          "offset": 78,
+          "type": "u16",
+          "scale": 1,
+          "unit": "ns (saturates at 65535)"
+        },
+        {
+          "number": 18,
+          "key": "gnss_spare_1",
+          "name": "Spare",
+          "offset": 80,
+          "type": "i16",
+          "scale": null,
+          "unit": "",
+          "spare": true
+        },
+        {
+          "number": 19,
+          "key": "gnss_spare_2",
+          "name": "Spare",
+          "offset": 82,
+          "type": "i16",
+          "scale": null,
+          "unit": "",
+          "spare": true
+        }
+      ]
+    },
+    {
+      "key": "imu",
+      "name": "IMU",
+      "offset": 84,
+      "bytes": 22,
+      "fields": [
+        {
+          "number": 20,
+          "key": "accel_x_raw",
+          "name": "Accel X, raw",
+          "offset": 84,
+          "type": "i16",
+          "scale": 1000,
+          "unit": "g (±32.767, 1 mg)"
+        },
+        {
+          "number": 21,
+          "key": "accel_y_raw",
+          "name": "Accel Y, raw",
+          "offset": 86,
+          "type": "i16",
+          "scale": 1000,
+          "unit": "g"
+        },
+        {
+          "number": 22,
+          "key": "accel_z_raw",
+          "name": "Accel Z, raw",
+          "offset": 88,
+          "type": "i16",
+          "scale": 1000,
+          "unit": "g"
+        },
+        {
+          "number": 23,
+          "key": "accel_x_filtered",
+          "name": "Accel X, filtered",
+          "offset": 90,
+          "type": "i16",
+          "scale": 1000,
+          "unit": "g"
+        },
+        {
+          "number": 24,
+          "key": "accel_y_filtered",
+          "name": "Accel Y, filtered",
+          "offset": 92,
+          "type": "i16",
+          "scale": 1000,
+          "unit": "g"
+        },
+        {
+          "number": 25,
+          "key": "accel_z_filtered",
+          "name": "Accel Z, filtered",
+          "offset": 94,
+          "type": "i16",
+          "scale": 1000,
+          "unit": "g"
+        },
+        {
+          "number": 26,
+          "key": "roll_rate",
+          "name": "Roll rate",
+          "offset": 96,
+          "type": "i16",
+          "scale": 10,
+          "unit": "°/s (±3276.7, 0.1), right side down positive"
+        },
+        {
+          "number": 27,
+          "key": "pitch_rate",
+          "name": "Pitch rate",
+          "offset": 98,
+          "type": "i16",
+          "scale": 10,
+          "unit": "°/s, nose down positive"
+        },
+        {
+          "number": 28,
+          "key": "yaw_rate",
+          "name": "Yaw rate",
+          "offset": 100,
+          "type": "i16",
+          "scale": 10,
+          "unit": "°/s, turning left positive"
+        },
+        {
+          "number": 29,
+          "key": "imu_spare_1",
+          "name": "Spare",
+          "offset": 102,
+          "type": "i16",
+          "scale": null,
+          "unit": "",
+          "spare": true
+        },
+        {
+          "number": 30,
+          "key": "imu_spare_2",
+          "name": "Spare",
+          "offset": 104,
+          "type": "i16",
+          "scale": null,
+          "unit": "",
+          "spare": true
+        }
+      ]
+    },
+    {
+      "key": "vehicle",
+      "name": "Vehicle",
+      "offset": 106,
+      "bytes": 52,
+      "fields": [
+        {
+          "number": 31,
+          "key": "engine_speed",
+          "name": "Engine speed",
+          "offset": 106,
+          "type": "i16",
+          "scale": 1,
+          "unit": "rpm"
+        },
+        {
+          "number": 32,
+          "key": "throttle_position",
+          "name": "Throttle position",
+          "offset": 108,
+          "type": "i16",
+          "scale": 10,
+          "unit": "%"
+        },
+        {
+          "number": 33,
+          "key": "accelerator_pedal",
+          "name": "Accelerator pedal position",
+          "offset": 110,
+          "type": "i16",
+          "scale": 10,
+          "unit": "%"
+        },
+        {
+          "number": 34,
+          "key": "vehicle_speed",
+          "name": "Vehicle speed",
+          "offset": 112,
+          "type": "i16",
+          "scale": 10,
+          "unit": "km/h"
+        },
+        {
+          "number": 35,
+          "key": "engine_load",
+          "name": "Engine load",
+          "offset": 114,
+          "type": "i16",
+          "scale": 10,
+          "unit": "%"
+        },
+        {
+          "number": 36,
+          "key": "coolant_temp",
+          "name": "Coolant temperature",
+          "offset": 116,
+          "type": "i16",
+          "scale": 10,
+          "unit": "°C"
+        },
+        {
+          "number": 37,
+          "key": "intake_air_temp",
+          "name": "Intake air temperature",
+          "offset": 118,
+          "type": "i16",
+          "scale": 10,
+          "unit": "°C"
+        },
+        {
+          "number": 38,
+          "key": "oil_temp",
+          "name": "Oil temperature",
+          "offset": 120,
+          "type": "i16",
+          "scale": 10,
+          "unit": "°C"
+        },
+        {
+          "number": 39,
+          "key": "oil_pressure",
+          "name": "Oil pressure",
+          "offset": 122,
+          "type": "i16",
+          "scale": 10,
+          "unit": "kPa"
+        },
+        {
+          "number": 40,
+          "key": "manifold_pressure",
+          "name": "Manifold absolute pressure",
+          "offset": 124,
+          "type": "i16",
+          "scale": 10,
+          "unit": "kPa"
+        },
+        {
+          "number": 41,
+          "key": "lambda",
+          "name": "Lambda",
+          "offset": 126,
+          "type": "i16",
+          "scale": 1000,
+          "unit": "λ"
+        },
+        {
+          "number": 42,
+          "key": "fuel_level",
+          "name": "Fuel level",
+          "offset": 128,
+          "type": "i16",
+          "scale": 10,
+          "unit": "%"
+        },
+        {
+          "number": 43,
+          "key": "brake_pressure",
+          "name": "Brake pressure",
+          "offset": 130,
+          "type": "i16",
+          "scale": 1,
+          "unit": "kPa"
+        },
+        {
+          "number": 44,
+          "key": "steering_angle",
+          "name": "Steering wheel angle",
+          "offset": 132,
+          "type": "i16",
+          "scale": 10,
+          "unit": "°, left positive"
+        },
+        {
+          "number": 45,
+          "key": "wheel_speed_fl",
+          "name": "Wheel speed, front left",
+          "offset": 134,
+          "type": "i16",
+          "scale": 10,
+          "unit": "km/h"
+        },
+        {
+          "number": 46,
+          "key": "wheel_speed_fr",
+          "name": "Wheel speed, front right",
+          "offset": 136,
+          "type": "i16",
+          "scale": 10,
+          "unit": "km/h"
+        },
+        {
+          "number": 47,
+          "key": "wheel_speed_rl",
+          "name": "Wheel speed, rear left",
+          "offset": 138,
+          "type": "i16",
+          "scale": 10,
+          "unit": "km/h"
+        },
+        {
+          "number": 48,
+          "key": "wheel_speed_rr",
+          "name": "Wheel speed, rear right",
+          "offset": 140,
+          "type": "i16",
+          "scale": 10,
+          "unit": "km/h"
+        },
+        {
+          "number": 49,
+          "key": "gear",
+          "name": "Gear",
+          "offset": 142,
+          "type": "i16",
+          "scale": 1,
+          "unit": "−1 reverse, 0 neutral, 1 …"
+        },
+        {
+          "number": 50,
+          "key": "aux_1",
+          "name": "Aux 1",
+          "offset": 144,
+          "type": "i16",
+          "scale": null,
+          "unit": "defined by the device's schema",
+          "aux": true
+        },
+        {
+          "number": 51,
+          "key": "aux_2",
+          "name": "Aux 2",
+          "offset": 146,
+          "type": "i16",
+          "scale": null,
+          "unit": "defined by the device's schema",
+          "aux": true
+        },
+        {
+          "number": 52,
+          "key": "aux_3",
+          "name": "Aux 3",
+          "offset": 148,
+          "type": "i16",
+          "scale": null,
+          "unit": "defined by the device's schema",
+          "aux": true
+        },
+        {
+          "number": 53,
+          "key": "aux_4",
+          "name": "Aux 4",
+          "offset": 150,
+          "type": "i16",
+          "scale": null,
+          "unit": "defined by the device's schema",
+          "aux": true
+        },
+        {
+          "number": 54,
+          "key": "vehicle_spare_1",
+          "name": "Spare",
+          "offset": 152,
+          "type": "i16",
+          "scale": null,
+          "unit": "",
+          "spare": true
+        },
+        {
+          "number": 55,
+          "key": "vehicle_spare_2",
+          "name": "Spare",
+          "offset": 154,
+          "type": "i16",
+          "scale": null,
+          "unit": "",
+          "spare": true
+        },
+        {
+          "number": 56,
+          "key": "vehicle_spare_3",
+          "name": "Spare",
+          "offset": 156,
+          "type": "i16",
+          "scale": null,
+          "unit": "",
+          "spare": true
+        }
+      ]
+    },
+    {
+      "key": "power",
+      "name": "Power",
+      "offset": 158,
+      "bytes": 6,
+      "fields": [
+        {
+          "number": 57,
+          "key": "supply_voltage",
+          "name": "Supply voltage",
+          "offset": 158,
+          "type": "u16",
+          "scale": 100,
+          "unit": "V: the vehicle supply, or the battery on battery devices"
+        },
+        {
+          "number": 58,
+          "key": "battery_charge",
+          "name": "Battery charge",
+          "offset": 160,
+          "type": "u8",
+          "scale": 1,
+          "unit": "%, battery devices only"
+        },
+        {
+          "number": 59,
+          "key": "charging",
+          "name": "Charging",
+          "offset": 161,
+          "type": "u8",
+          "scale": 1,
+          "unit": "0 or 1"
+        },
+        {
+          "key": "power_reserved",
+          "name": "Reserved",
+          "offset": 162,
+          "type": "u8x2",
+          "scale": null,
+          "unit": "0",
+          "reserved": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+# Mac stuff
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Build output
+build/
+
+# Editors
+.vscode/
+.idea/
+*.swp

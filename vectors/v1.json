@@ -1,0 +1,175 @@
+[
+  {
+    "name": "gnimu-can-waiting",
+    "description": "Gnimu-CAN waiting for the vehicle: only the supply voltage is known.",
+    "header": {
+      "device_time_ms": 1500,
+      "sequence": 0,
+      "device_type": 2,
+      "state": 3
+    },
+    "values": {
+      "supply_voltage": 12.48
+    },
+    "fresh": [
+      "supply_voltage"
+    ],
+    "hex": "dc05000000010203000000000000000200000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e00400000000"
+  },
+  {
+    "name": "gnimu-can-running",
+    "description": "Gnimu-CAN polling RPM and throttle; RPM just updated, throttle repeated.",
+    "header": {
+      "device_time_ms": 734120,
+      "sequence": 201,
+      "device_type": 2,
+      "state": 2
+    },
+    "values": {
+      "engine_speed": 3250,
+      "throttle_position": 42.7,
+      "supply_voltage": 14.12
+    },
+    "fresh": [
+      "engine_speed",
+      "supply_voltage"
+    ],
+    "hex": "a8330b00c90102020000008001000002000000800000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b20cab01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000840500000000"
+  },
+  {
+    "name": "gnimu-parked",
+    "description": "Gnimu parked on level ground with a 3D fix: a_z = +1 g, everything else at rest.",
+    "header": {
+      "device_time_ms": 61234,
+      "sequence": 17,
+      "device_type": 1,
+      "state": 2
+    },
+    "values": {
+      "latitude": 47.6205063,
+      "longitude": -122.3492774,
+      "altitude_msl": 56.789,
+      "height_ellipsoid": 34.123,
+      "ground_speed": 0,
+      "vertical_velocity": 0,
+      "horizontal_accuracy": 0.412,
+      "vertical_accuracy": 0.733,
+      "speed_accuracy": 0.25,
+      "pdop": 1.21,
+      "fix_type": 3,
+      "satellites": 17,
+      "gnss_time_of_week": 401234500,
+      "utc_date": 20261030,
+      "utc_time": 40017500,
+      "time_accuracy": 21,
+      "accel_x_raw": 0.003,
+      "accel_y_raw": -0.002,
+      "accel_z_raw": 1.001,
+      "accel_x_filtered": 0,
+      "accel_y_filtered": 0,
+      "accel_z_filtered": 1,
+      "roll_rate": 0,
+      "pitch_rate": 0,
+      "yaw_rate": 0,
+      "supply_voltage": 4.02,
+      "battery_charge": 87,
+      "charging": 0
+    },
+    "fresh": [
+      "latitude",
+      "longitude",
+      "altitude_msl",
+      "height_ellipsoid",
+      "ground_speed",
+      "vertical_velocity",
+      "horizontal_accuracy",
+      "vertical_accuracy",
+      "speed_accuracy",
+      "pdop",
+      "fix_type",
+      "satellites",
+      "gnss_time_of_week",
+      "utc_date",
+      "utc_time",
+      "time_accuracy"
+    ],
+    "hex": "32ef000011010102dffbf31f0000000edffb03000000000022bb1cc06ccf4740d88e988f5a965ec0d5dd00004b8500000000000000009c01dd021900000079000311445aea17a62835015c9e62021500000000000300feffe90300000000e8030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000920157000000"
+  },
+  {
+    "name": "left-turn",
+    "description": "All-in-one device in a steady left turn: a_y and yaw rate positive, steering left positive, heading west.",
+    "header": {
+      "device_time_ms": 912345,
+      "sequence": 88,
+      "device_type": 3,
+      "state": 2
+    },
+    "values": {
+      "ground_speed": 72.45,
+      "heading": 271.5,
+      "accel_y_filtered": 0.85,
+      "accel_z_filtered": 1.01,
+      "yaw_rate": 25.3,
+      "roll_rate": 2.1,
+      "engine_speed": 4120,
+      "throttle_position": 35.5,
+      "vehicle_speed": 72.4,
+      "steering_angle": 90.5,
+      "gear": 3
+    },
+    "fresh": [
+      "accel_y_filtered",
+      "accel_z_filtered",
+      "yaw_rate",
+      "roll_rate"
+    ],
+    "hex": "d9eb0d0058010302300000970510020000000017000000000000000000000000000000000000000000000000000000004d1c0e6a000000000000000000000000000000000000000000000000000000000000000000000000000000005203f20315000000fd0000000000181063010000d4020000000000000000000000000000000000008903000000000000000003000000000000000000000000000000000000000000"
+  },
+  {
+    "name": "braking",
+    "description": "All-in-one device braking hard: a_x negative, pitch rate positive (nose down).",
+    "header": {
+      "device_time_ms": 915000,
+      "sequence": 141,
+      "device_type": 3,
+      "state": 2
+    },
+    "values": {
+      "ground_speed": 88.25,
+      "accel_x_filtered": -1.12,
+      "accel_z_filtered": 0.98,
+      "pitch_rate": 3.4,
+      "engine_speed": 3800,
+      "throttle_position": 0,
+      "vehicle_speed": 88.3,
+      "brake_pressure": 4500,
+      "gear": 3
+    },
+    "fresh": [
+      "accel_x_filtered",
+      "pitch_rate",
+      "brake_pressure"
+    ],
+    "hex": "38f60d008d0103021000808a050802000000800800080000000000000000000000000000000000000000000000000000792200000000000000000000000000000000000000000000000000000000000000000000000000000000a0fb0000d40300002200000000000000d80e0000000073030000000000000000000000000000000094110000000000000000000003000000000000000000000000000000000000000000"
+  },
+  {
+    "name": "edges",
+    "description": "Edge cases: reverse gear, saturation of accuracy fields, half-away-from-zero rounding, a raw aux value.",
+    "header": {
+      "device_time_ms": 2147483647,
+      "sequence": 255,
+      "device_type": 3,
+      "state": 3
+    },
+    "values": {
+      "gear": -1,
+      "horizontal_accuracy": 120,
+      "time_accuracy": 100000,
+      "steering_angle": -12.25,
+      "accel_y_raw": -40,
+      "aux_1": 1234
+    },
+    "fresh": [],
+    "hex": "ffffff7fff01030380002200001006000000000000000000000000000000000000000000000000000000000000000000000000000000ffff00000000000000000000000000000000000000000000ffff0000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000085ff0000000000000000ffffd204000000000000000000000000000000000000"
+  }
+]
