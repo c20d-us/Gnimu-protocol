@@ -10,152 +10,143 @@ namespace gnimu_frame {
 namespace v1 {
 
 constexpr uint8_t kSpecVersion = 1;
-constexpr size_t kFrameBytes = 164;
-constexpr uint8_t kFieldCount = 60;
+constexpr size_t kFrameBytes = 140;
+constexpr uint8_t kFieldCount = 52;
 
 // Header
 constexpr size_t kDeviceTimeMsOffset = 0;
 constexpr size_t kSequenceOffset = 4;
 constexpr size_t kSpecVersionOffset = 5;
-constexpr size_t kDeviceTypeOffset = 6;
+constexpr size_t kCapabilitiesOffset = 6;
 constexpr size_t kStateOffset = 7;
-constexpr size_t kValidMaskOffset = 8;
-constexpr size_t kFreshMaskOffset = 16;
+
+// Blocks: each starts with its valid mask
+constexpr size_t kGnssMaskOffset = 8;  // 2 bytes
+constexpr size_t kImuMaskOffset = 56;  // 1 bytes
+constexpr size_t kVehicleMaskOffset = 71;  // 4 bytes
+constexpr size_t kPowerMaskOffset = 133;  // 1 bytes
 
 enum class Type : uint8_t { U8, I16, U16, I32, F64 };
 
-// Field numbers: the index into kFields and the bit in the valid and fresh masks.
+// Index into kFields. The order carries no meaning on the wire.
 enum class Field : uint8_t {
   Latitude = 0,
   Longitude = 1,
   AltitudeMsl = 2,
-  HeightEllipsoid = 3,
-  GroundSpeed = 4,
-  Heading = 5,
-  VerticalVelocity = 6,
-  HorizontalAccuracy = 7,
-  VerticalAccuracy = 8,
-  SpeedAccuracy = 9,
-  HeadingAccuracy = 10,
-  Pdop = 11,
-  FixType = 12,
-  Satellites = 13,
-  GnssTimeOfWeek = 14,
-  UtcDate = 15,
-  UtcTime = 16,
-  TimeAccuracy = 17,
-  GnssSpare1 = 18,
-  GnssSpare2 = 19,
-  AccelXRaw = 20,
-  AccelYRaw = 21,
-  AccelZRaw = 22,
-  AccelXFiltered = 23,
-  AccelYFiltered = 24,
-  AccelZFiltered = 25,
-  RollRate = 26,
-  PitchRate = 27,
-  YawRate = 28,
-  ImuSpare1 = 29,
-  ImuSpare2 = 30,
-  EngineSpeed = 31,
-  ThrottlePosition = 32,
-  AcceleratorPedal = 33,
-  VehicleSpeed = 34,
-  EngineLoad = 35,
-  CoolantTemp = 36,
-  IntakeAirTemp = 37,
-  OilTemp = 38,
-  OilPressure = 39,
-  ManifoldPressure = 40,
-  Lambda = 41,
-  FuelLevel = 42,
-  BrakePressure = 43,
-  SteeringAngle = 44,
-  WheelSpeedFl = 45,
-  WheelSpeedFr = 46,
-  WheelSpeedRl = 47,
-  WheelSpeedRr = 48,
-  Gear = 49,
-  Aux1 = 50,
-  Aux2 = 51,
-  Aux3 = 52,
-  Aux4 = 53,
-  VehicleSpare1 = 54,
-  VehicleSpare2 = 55,
-  VehicleSpare3 = 56,
-  SupplyVoltage = 57,
-  BatteryCharge = 58,
-  Charging = 59,
+  GroundSpeed = 3,
+  Heading = 4,
+  HorizontalAccuracy = 5,
+  VerticalAccuracy = 6,
+  SpeedAccuracy = 7,
+  Pdop = 8,
+  FixType = 9,
+  Satellites = 10,
+  UtcTimestamp = 11,
+  TimeAccuracy = 12,
+  GnssEpochAge = 13,
+  AccelX = 14,
+  AccelY = 15,
+  AccelZ = 16,
+  RollRate = 17,
+  PitchRate = 18,
+  YawRate = 19,
+  EngineSpeed = 20,
+  ThrottlePosition = 21,
+  AcceleratorPedal = 22,
+  VehicleSpeed = 23,
+  CoolantTemp = 24,
+  IntakeAirTemp = 25,
+  AmbientTemp = 26,
+  OilTemp = 27,
+  OilPressure = 28,
+  Boost = 29,
+  Lambda = 30,
+  FuelLevel = 31,
+  FuelPressure = 32,
+  BrakePressure = 33,
+  BrakeSwitch = 34,
+  ClutchSwitch = 35,
+  SteeringAngle = 36,
+  CarYawRate = 37,
+  CarLateralAccel = 38,
+  CarLongitudinalAccel = 39,
+  WheelSpeedFl = 40,
+  WheelSpeedFr = 41,
+  WheelSpeedRl = 42,
+  WheelSpeedRr = 43,
+  Gear = 44,
+  Aux1 = 45,
+  Aux2 = 46,
+  Aux3 = 47,
+  Aux4 = 48,
+  SupplyVoltage = 49,
+  BatteryCharge = 50,
+  Charging = 51,
 };
 
-// scale 0: no fixed scale (aux fields, defined by the device's schema; spares).
+// scale 0: no fixed scale (aux fields, defined by the device's schema).
+// A field's valid bit is bit `bit` of its block's mask, at `maskOffset`.
 struct FieldInfo {
   uint8_t offset;
   Type type;
   uint16_t scale;
+  uint8_t maskOffset;
+  uint8_t bit;
 };
 
 constexpr FieldInfo kFields[kFieldCount] = {
-    {24, Type::F64, 1},  // 0 latitude
-    {32, Type::F64, 1},  // 1 longitude
-    {40, Type::I32, 1000},  // 2 altitude_msl
-    {44, Type::I32, 1000},  // 3 height_ellipsoid
-    {48, Type::U16, 100},  // 4 ground_speed
-    {50, Type::U16, 100},  // 5 heading
-    {52, Type::I16, 100},  // 6 vertical_velocity
-    {54, Type::U16, 1000},  // 7 horizontal_accuracy
-    {56, Type::U16, 1000},  // 8 vertical_accuracy
-    {58, Type::U16, 100},  // 9 speed_accuracy
-    {60, Type::U16, 100},  // 10 heading_accuracy
-    {62, Type::U16, 100},  // 11 pdop
-    {64, Type::U8, 1},  // 12 fix_type
-    {65, Type::U8, 1},  // 13 satellites
-    {66, Type::I32, 1},  // 14 gnss_time_of_week
-    {70, Type::I32, 1},  // 15 utc_date
-    {74, Type::I32, 1},  // 16 utc_time
-    {78, Type::U16, 1},  // 17 time_accuracy
-    {80, Type::I16, 0},  // 18 gnss_spare_1
-    {82, Type::I16, 0},  // 19 gnss_spare_2
-    {84, Type::I16, 1000},  // 20 accel_x_raw
-    {86, Type::I16, 1000},  // 21 accel_y_raw
-    {88, Type::I16, 1000},  // 22 accel_z_raw
-    {90, Type::I16, 1000},  // 23 accel_x_filtered
-    {92, Type::I16, 1000},  // 24 accel_y_filtered
-    {94, Type::I16, 1000},  // 25 accel_z_filtered
-    {96, Type::I16, 10},  // 26 roll_rate
-    {98, Type::I16, 10},  // 27 pitch_rate
-    {100, Type::I16, 10},  // 28 yaw_rate
-    {102, Type::I16, 0},  // 29 imu_spare_1
-    {104, Type::I16, 0},  // 30 imu_spare_2
-    {106, Type::I16, 1},  // 31 engine_speed
-    {108, Type::I16, 10},  // 32 throttle_position
-    {110, Type::I16, 10},  // 33 accelerator_pedal
-    {112, Type::I16, 10},  // 34 vehicle_speed
-    {114, Type::I16, 10},  // 35 engine_load
-    {116, Type::I16, 10},  // 36 coolant_temp
-    {118, Type::I16, 10},  // 37 intake_air_temp
-    {120, Type::I16, 10},  // 38 oil_temp
-    {122, Type::I16, 10},  // 39 oil_pressure
-    {124, Type::I16, 10},  // 40 manifold_pressure
-    {126, Type::I16, 1000},  // 41 lambda
-    {128, Type::I16, 10},  // 42 fuel_level
-    {130, Type::I16, 1},  // 43 brake_pressure
-    {132, Type::I16, 10},  // 44 steering_angle
-    {134, Type::I16, 10},  // 45 wheel_speed_fl
-    {136, Type::I16, 10},  // 46 wheel_speed_fr
-    {138, Type::I16, 10},  // 47 wheel_speed_rl
-    {140, Type::I16, 10},  // 48 wheel_speed_rr
-    {142, Type::I16, 1},  // 49 gear
-    {144, Type::I16, 0},  // 50 aux_1
-    {146, Type::I16, 0},  // 51 aux_2
-    {148, Type::I16, 0},  // 52 aux_3
-    {150, Type::I16, 0},  // 53 aux_4
-    {152, Type::I16, 0},  // 54 vehicle_spare_1
-    {154, Type::I16, 0},  // 55 vehicle_spare_2
-    {156, Type::I16, 0},  // 56 vehicle_spare_3
-    {158, Type::U16, 100},  // 57 supply_voltage
-    {160, Type::U8, 1},  // 58 battery_charge
-    {161, Type::U8, 1},  // 59 charging
+    {10, Type::F64, 1, 8, 0},  // latitude
+    {18, Type::F64, 1, 8, 1},  // longitude
+    {26, Type::I32, 1000, 8, 2},  // altitude_msl
+    {30, Type::U16, 100, 8, 3},  // ground_speed
+    {32, Type::U16, 100, 8, 4},  // heading
+    {34, Type::U16, 1000, 8, 5},  // horizontal_accuracy
+    {36, Type::U16, 1000, 8, 6},  // vertical_accuracy
+    {38, Type::U8, 10, 8, 7},  // speed_accuracy
+    {39, Type::U8, 10, 8, 8},  // pdop
+    {40, Type::U8, 1, 8, 9},  // fix_type
+    {41, Type::U8, 1, 8, 10},  // satellites
+    {42, Type::F64, 1, 8, 11},  // utc_timestamp
+    {50, Type::U16, 1, 8, 12},  // time_accuracy
+    {52, Type::U16, 1, 8, 13},  // gnss_epoch_age
+    {57, Type::I16, 1000, 56, 0},  // accel_x
+    {59, Type::I16, 1000, 56, 1},  // accel_y
+    {61, Type::I16, 1000, 56, 2},  // accel_z
+    {63, Type::I16, 10, 56, 3},  // roll_rate
+    {65, Type::I16, 10, 56, 4},  // pitch_rate
+    {67, Type::I16, 10, 56, 5},  // yaw_rate
+    {75, Type::I16, 1, 71, 0},  // engine_speed
+    {77, Type::I16, 10, 71, 1},  // throttle_position
+    {79, Type::I16, 10, 71, 2},  // accelerator_pedal
+    {81, Type::I16, 10, 71, 3},  // vehicle_speed
+    {83, Type::I16, 10, 71, 4},  // coolant_temp
+    {85, Type::I16, 10, 71, 5},  // intake_air_temp
+    {87, Type::I16, 10, 71, 6},  // ambient_temp
+    {89, Type::I16, 10, 71, 7},  // oil_temp
+    {91, Type::I16, 10, 71, 8},  // oil_pressure
+    {93, Type::I16, 10, 71, 9},  // boost
+    {95, Type::I16, 1000, 71, 10},  // lambda
+    {97, Type::U8, 1, 71, 11},  // fuel_level
+    {98, Type::U16, 1, 71, 12},  // fuel_pressure
+    {100, Type::I16, 1, 71, 13},  // brake_pressure
+    {102, Type::U8, 1, 71, 14},  // brake_switch
+    {103, Type::U8, 1, 71, 15},  // clutch_switch
+    {104, Type::I16, 10, 71, 16},  // steering_angle
+    {106, Type::I16, 10, 71, 17},  // car_yaw_rate
+    {108, Type::I16, 1000, 71, 18},  // car_lateral_accel
+    {110, Type::I16, 1000, 71, 19},  // car_longitudinal_accel
+    {112, Type::I16, 10, 71, 20},  // wheel_speed_fl
+    {114, Type::I16, 10, 71, 21},  // wheel_speed_fr
+    {116, Type::I16, 10, 71, 22},  // wheel_speed_rl
+    {118, Type::I16, 10, 71, 23},  // wheel_speed_rr
+    {120, Type::I16, 1, 71, 24},  // gear
+    {122, Type::I16, 0, 71, 25},  // aux_1
+    {124, Type::I16, 0, 71, 26},  // aux_2
+    {126, Type::I16, 0, 71, 27},  // aux_3
+    {128, Type::I16, 0, 71, 28},  // aux_4
+    {134, Type::U16, 100, 133, 0},  // supply_voltage
+    {136, Type::U8, 1, 133, 1},  // battery_charge
+    {137, Type::U8, 1, 133, 2},  // charging
 };
 
 }  // namespace v1

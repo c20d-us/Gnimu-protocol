@@ -30,7 +30,7 @@ class SpecTest(unittest.TestCase):
         used = [False] * spec["frame_bytes"]
         entries = spec["header"] + [f for b in spec["blocks"] for f in b["fields"]]
         for f in entries:
-            for i in range(f["offset"], f["offset"] + spec["types"][f["type"]]):
+            for i in range(f["offset"], f["offset"] + generate.size_of(spec, f)):
                 self.assertFalse(used[i], "byte %d used twice (%s)" % (i, f["key"]))
                 used[i] = True
         self.assertTrue(all(used))
@@ -40,20 +40,19 @@ class VectorTest(unittest.TestCase):
     def test_encoder_matches_vectors(self):
         for v in load_vectors():
             with self.subTest(v["name"]):
-                frame = gnimu_frame.encode(v["header"], v["values"], v.get("fresh", []))
+                frame = gnimu_frame.encode(v["header"], v["values"])
                 self.assertEqual(frame.hex(), v["hex"])
 
     def test_decoder_reads_vectors_back(self):
         spec = gnimu_frame.load_spec()
-        fields = {f["key"]: f for f in gnimu_frame.numbered_fields(spec)}
+        fields = {f["key"]: f for b, f in gnimu_frame.data_fields(spec)}
         for v in load_vectors():
             with self.subTest(v["name"]):
-                header, values, fresh = gnimu_frame.decode(bytes.fromhex(v["hex"]))
-                for key in ("device_time_ms", "sequence", "device_type", "state"):
+                header, values = gnimu_frame.decode(bytes.fromhex(v["hex"]))
+                for key in ("device_time_ms", "sequence", "capabilities", "state"):
                     self.assertEqual(header[key], v["header"][key])
                 self.assertEqual(header["spec_version"], spec["version"])
                 self.assertEqual(set(values), set(v["values"]))
-                self.assertEqual(fresh, set(v.get("fresh", [])))
                 for key, expected in v["values"].items():
                     f = fields[key]
                     expected_raw = gnimu_frame.to_raw(f, expected)
@@ -63,7 +62,7 @@ class VectorTest(unittest.TestCase):
 class EncodingTest(unittest.TestCase):
     def setUp(self):
         spec = gnimu_frame.load_spec()
-        self.fields = {f["key"]: f for f in gnimu_frame.numbered_fields(spec)}
+        self.fields = {f["key"]: f for b, f in gnimu_frame.data_fields(spec)}
 
     def test_rounds_half_away_from_zero(self):
         self.assertEqual(gnimu_frame.to_raw(self.fields["steering_angle"], 12.25), 123)

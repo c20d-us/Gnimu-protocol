@@ -23,8 +23,9 @@ TYPES = {
     "u16": ("<H", 0, 0xFFFF),
     "i32": ("<i", -0x80000000, 0x7FFFFFFF),
     "f64": ("<d", None, None),
-    "mask64": ("<Q", 0, 0xFFFFFFFFFFFFFFFF),
 }
+
+MASK_BYTES = {"mask8": 1, "mask16": 2, "mask32": 4}
 
 
 def load_spec(path=SPEC_PATH):
@@ -32,10 +33,13 @@ def load_spec(path=SPEC_PATH):
         return json.load(f)
 
 
-def numbered_fields(spec):
-    """Every field with a field number, in number order."""
-    out = [f for b in spec["blocks"] for f in b["fields"] if "number" in f]
-    return sorted(out, key=lambda f: f["number"])
+def data_fields(spec):
+    """Every data field as (block, field), in frame order: not masks or spares."""
+    return [(b, f) for b in spec["blocks"] for f in b["fields"] if f["type"] in TYPES]
+
+
+def _mask(block):
+    return block["fields"][0]
 
 
 def _round_half_away(x):
@@ -58,52 +62,46 @@ def from_raw(field, raw):
     return raw / field["scale"]
 
 
-def encode(header, values, fresh=(), spec=None):
+def encode(header, values, spec=None):
     """Builds one frame.
 
-    header: device_time_ms, sequence, device_type, state.
-    values: {field key: value}; every key present is marked valid.
-    fresh:  field keys to mark fresh.
+    header: device_time_ms, sequence, capabilities, state.
+    values: {field key: value}; every key present is marked valid in its block's mask.
     """
     spec = spec or load_spec()
     frame = bytearray(spec["frame_bytes"])
-    by_key = {f["key"]: f for f in numbered_fields(spec)}
+    by_key = {f["key"]: (b, f) for b, f in data_fields(spec)}
     hdr = {f["key"]: f for f in spec["header"]}
 
-    valid_mask = 0
-    fresh_mask = 0
+    masks = {b["key"]: 0 for b in spec["blocks"]}
     for key, value in values.items():
-        field = by_key[key]
+        block, field = by_key[key]
         struct.pack_into(TYPES[field["type"]][0], frame, field["offset"], to_raw(field, value))
-        valid_mask |= 1 << field["number"]
-    for key in fresh:
-        fresh_mask |= 1 << by_key[key]["number"]
+        masks[block["key"]] |= 1 << field["bit"]
+    for b in spec["blocks"]:
+        m = _mask(b)
+        frame[m["offset"]:m["offset"] + MASK_BYTES[m["type"]]] = masks[b["key"]].to_bytes(MASK_BYTES[m["type"]], "little")
 
     struct.pack_into("<i", frame, hdr["device_time_ms"]["offset"], header["device_time_ms"])
     frame[hdr["sequence"]["offset"]] = header["sequence"] & 0xFF
     frame[hdr["spec_version"]["offset"]] = spec["version"]
-    frame[hdr["device_type"]["offset"]] = header["device_type"]
+    frame[hdr["capabilities"]["offset"]] = header["capabilities"]
     frame[hdr["state"]["offset"]] = header["state"]
-    struct.pack_into("<Q", frame, hdr["valid_mask"]["offset"], valid_mask)
-    struct.pack_into("<Q", frame, hdr["fresh_mask"]["offset"], fresh_mask)
     return bytes(frame)
 
 
 def decode(frame, spec=None):
-    """Returns (header dict, {key: value} for valid fields, set of fresh keys)."""
+    """Returns (header dict, {key: value} for valid fields)."""
     spec = spec or load_spec()
     if len(frame) != spec["frame_bytes"]:
         raise ValueError("frame is %d bytes, expected %d" % (len(frame), spec["frame_bytes"]))
-    header = {}
-    for f in spec["header"]:
-        header[f["key"]] = struct.unpack_from(TYPES[f["type"]][0], frame, f["offset"])[0]
+    header = {f["key"]: struct.unpack_from(TYPES[f["type"]][0], frame, f["offset"])[0] for f in spec["header"]}
     values = {}
-    fresh = set()
-    for field in numbered_fields(spec):
-        bit = 1 << field["number"]
-        if header["valid_mask"] & bit:
-            raw = struct.unpack_from(TYPES[field["type"]][0], frame, field["offset"])[0]
-            values[field["key"]] = from_raw(field, raw)
-        if header["fresh_mask"] & bit:
-            fresh.add(field["key"])
-    return header, values, fresh
+    for b in spec["blocks"]:
+        m = _mask(b)
+        mask = int.from_bytes(frame[m["offset"]:m["offset"] + MASK_BYTES[m["type"]]], "little")
+        for field in b["fields"][1:]:
+            if field["type"] in TYPES and mask & (1 << field["bit"]):
+                raw = struct.unpack_from(TYPES[field["type"]][0], frame, field["offset"])[0]
+                values[field["key"]] = from_raw(field, raw)
+    return header, values

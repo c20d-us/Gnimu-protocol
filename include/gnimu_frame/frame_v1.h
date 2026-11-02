@@ -20,7 +20,13 @@ namespace gnimu_frame {
 namespace v1 {
 
 inline const FieldInfo &info(Field f) { return kFields[static_cast<uint8_t>(f)]; }
-inline uint64_t bit(Field f) { return static_cast<uint64_t>(1) << static_cast<uint8_t>(f); }
+
+// Capability bits for the header: the blocks the device fills, whatever it has
+// right now (the blocks' valid masks say that).
+constexpr uint8_t kCapGnss = 1;
+constexpr uint8_t kCapImu = 2;
+constexpr uint8_t kCapVehicle = 4;
+constexpr uint8_t kCapPower = 8;
 
 namespace detail {
 
@@ -43,6 +49,17 @@ inline size_t width(Type t) {
     case Type::F64: return 8;
   }
   return 0;
+}
+
+// A field's valid bit: bit n of its block's little-endian mask is bit n % 8
+// of the mask's byte n / 8.
+inline void setValid(uint8_t *frame, const FieldInfo &fi) {
+  uint8_t &b = frame[fi.maskOffset + fi.bit / 8];
+  b = static_cast<uint8_t>(b | (1u << (fi.bit % 8)));
+}
+
+inline bool isValid(const uint8_t *frame, const FieldInfo &fi) {
+  return ((frame[fi.maskOffset + fi.bit / 8] >> (fi.bit % 8)) & 1u) != 0;
 }
 
 inline double minOf(Type t) {
@@ -72,21 +89,19 @@ inline double roundHalfAway(double x) { return x >= 0 ? floor(x + 0.5) : -floor(
 // Fields that aren't set are sent as 0 with their valid bit clear.
 class Encoder {
  public:
-  void begin(int32_t deviceTimeMs, uint8_t sequence, uint8_t deviceType, uint8_t state) {
+  void begin(int32_t deviceTimeMs, uint8_t sequence, uint8_t capabilities, uint8_t state) {
     memset(bytes_, 0, sizeof(bytes_));
-    valid_ = 0;
-    fresh_ = 0;
     detail::putLe(bytes_ + kDeviceTimeMsOffset, static_cast<uint32_t>(deviceTimeMs), 4);
     bytes_[kSequenceOffset] = sequence;
     bytes_[kSpecVersionOffset] = kSpecVersion;
-    bytes_[kDeviceTypeOffset] = deviceType;
+    bytes_[kCapabilitiesOffset] = capabilities;
     bytes_[kStateOffset] = state;
   }
 
   // Sets a field from a value in the units the spec lists: multiplied by the
   // field's scale, rounded half away from zero, and saturated to its type.
   // Aux fields have no fixed scale, so the value is taken as raw.
-  void set(Field f, double value, bool fresh) {
+  void set(Field f, double value) {
     const FieldInfo &fi = info(f);
     if (fi.type == Type::F64) {
       uint64_t u;
@@ -99,21 +114,15 @@ class Encoder {
       const int64_t r = static_cast<int64_t>(raw);
       detail::putLe(bytes_ + fi.offset, static_cast<uint64_t>(r), detail::width(fi.type));
     }
-    valid_ |= bit(f);
-    if (fresh) fresh_ |= bit(f);
+    detail::setValid(bytes_, fi);
   }
 
-  // Writes the masks and returns the finished frame, kFrameBytes long.
-  const uint8_t *finish() {
-    detail::putLe(bytes_ + kValidMaskOffset, valid_, 8);
-    detail::putLe(bytes_ + kFreshMaskOffset, fresh_, 8);
-    return bytes_;
-  }
+  // Returns the finished frame, kFrameBytes long. The valid masks are written
+  // as fields are set, so there's nothing left to do; this is the read point.
+  const uint8_t *finish() const { return bytes_; }
 
  private:
   uint8_t bytes_[kFrameBytes];
-  uint64_t valid_ = 0;
-  uint64_t fresh_ = 0;
 };
 
 // Reads fields from a received frame. The caller checks the length first.
@@ -126,13 +135,9 @@ class Decoder {
   }
   uint8_t sequence() const { return p_[kSequenceOffset]; }
   uint8_t specVersion() const { return p_[kSpecVersionOffset]; }
-  uint8_t deviceType() const { return p_[kDeviceTypeOffset]; }
+  uint8_t capabilities() const { return p_[kCapabilitiesOffset]; }
   uint8_t state() const { return p_[kStateOffset]; }
-  uint64_t validMask() const { return detail::getLe(p_ + kValidMaskOffset, 8); }
-  uint64_t freshMask() const { return detail::getLe(p_ + kFreshMaskOffset, 8); }
-
-  bool valid(Field f) const { return (validMask() & bit(f)) != 0; }
-  bool fresh(Field f) const { return (freshMask() & bit(f)) != 0; }
+  bool valid(Field f) const { return detail::isValid(p_, info(f)); }
 
   // The field in the spec's units (raw for aux fields). Only meaningful when
   // valid(f); an invalid field reads 0.

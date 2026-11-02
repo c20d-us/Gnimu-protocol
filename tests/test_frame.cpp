@@ -17,14 +17,13 @@ namespace {
 struct VectorValue {
   Field field;
   double value;
-  bool fresh;
 };
 
 struct Vector {
   const char *name;
   int32_t deviceTimeMs;
   uint8_t sequence;
-  uint8_t deviceType;
+  uint8_t capabilities;
   uint8_t state;
   const VectorValue *values;
   size_t count;
@@ -48,8 +47,8 @@ void toHex(const uint8_t *p, size_t n, char *out) {
 
 void testVector(const Vector &v) {
   Encoder enc;
-  enc.begin(v.deviceTimeMs, v.sequence, v.deviceType, v.state);
-  for (size_t i = 0; i < v.count; i++) enc.set(v.values[i].field, v.values[i].value, v.values[i].fresh);
+  enc.begin(v.deviceTimeMs, v.sequence, v.capabilities, v.state);
+  for (size_t i = 0; i < v.count; i++) enc.set(v.values[i].field, v.values[i].value);
   const uint8_t *frame = enc.finish();
 
   char hex[2 * kFrameBytes + 1];
@@ -60,22 +59,21 @@ void testVector(const Vector &v) {
   check(dec.deviceTimeMs() == v.deviceTimeMs, v.name, "device time");
   check(dec.sequence() == v.sequence, v.name, "sequence");
   check(dec.specVersion() == kSpecVersion, v.name, "spec version");
-  check(dec.deviceType() == v.deviceType, v.name, "device type");
+  check(dec.capabilities() == v.capabilities, v.name, "capabilities");
   check(dec.state() == v.state, v.name, "state");
   for (size_t i = 0; i < v.count; i++) {
     check(dec.valid(v.values[i].field), v.name, "valid bit");
-    check(dec.fresh(v.values[i].field) == v.values[i].fresh, v.name, "fresh bit");
   }
 }
 
 void testDecoderUnits() {
   Encoder enc;
   enc.begin(0, 0, 3, 2);
-  enc.set(Field::AccelYFiltered, -0.85, true);
-  enc.set(Field::Latitude, 47.6205063, true);
-  enc.set(Field::Gear, -1, false);
+  enc.set(Field::AccelY, -0.85);
+  enc.set(Field::Latitude, 47.6205063);
+  enc.set(Field::Gear, -1);
   Decoder dec(enc.finish());
-  check(dec.value(Field::AccelYFiltered) == -0.85, "units", "accel y");
+  check(dec.value(Field::AccelY) == -0.85, "units", "accel y");
   check(dec.value(Field::Latitude) == 47.6205063, "units", "latitude");
   check(dec.value(Field::Gear) == -1, "units", "gear");
   check(!dec.valid(Field::EngineSpeed) && dec.value(Field::EngineSpeed) == 0, "units", "unset field");
