@@ -125,6 +125,19 @@ A client checks a field's valid bit in its own block's mask. A device that doesn
 
 It describes the device's hardware and build, not its current state: a GNSS device without a fix yet still sets the GNSS bit, and Gnimu-CAN sets the Vehicle bit while it waits for the car. That's what lets a client tell "no fix yet" from "no GNSS at all"; the blocks' valid masks say what's available right now, and the [schema's](#schema) fill masks say exactly which fields of each block the device provides. Like the valid masks, it's for Gnimu tools rather than for mapping in an app. The product name (Gnimu, Gnimu-CAN, ...) is in the advertised name, the schema and the Device Information Service.
 
+**State** is the device's own condition, in terms that mean the same on every Gnimu device:
+
+| Value | State | Meaning | Gnimu | Gnimu-CAN |
+|---|---|---|---|---|
+| 0 | Unknown | Not set; a client treats it as "no information" | | |
+| 1 | Starting | Booting; data isn't expected yet | Starting | Starting |
+| 2 | Running | Normal operation | Running, with or without a fix | Polling: an ECU is answering |
+| 3 | Waiting | Up, but waiting for an outside source it can't do its job without | Not used | Waiting for the vehicle |
+| 4 | Fault | Failed and not retrying | Fault | Fault |
+| 5–255 | Reserved | | | |
+
+State is about the device, not its data. Whether a field holds a value is in its block's valid mask: a GNSS device that's running without a fix yet says so through the fix field and the GNSS valid bits, not through the state. And on a device that reads a vehicle, running doesn't say whether the engine is running; the vehicle fields (engine speed, for one) say that.
+
 **Device time is worth mapping in an app.** Fixed-layout apps typically stamp a sample when it arrives, which carries BLE timing jitter. With device time recorded as a channel, a log can be re-timed afterwards from the device's own clock.
 
 ### GNSS
