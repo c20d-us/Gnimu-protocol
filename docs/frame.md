@@ -316,7 +316,7 @@ A client compares the two masks field by field: fill bit and valid bit set, show
 
 Fill masks describe the device as it's currently set up, not just its build: a device may clear bits for fields it has found unavailable, such as PIDs a car doesn't support.
 
-The device's `V` console command prints the same JSON, and the app-setup table (offset, type, scale and name for each filled field).
+A device's console can print the same information as an app-setup table: the service and frame UUIDs, the packet length, and the offset, type and scale of each field it fills.
 
 ### Device info
 
