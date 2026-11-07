@@ -5,21 +5,21 @@
 
 ## The idea
 
-**One fixed layout, the same on every device.** Every field has one offset, type, scale and meaning, everywhere. Latitude is always at offset 10, RPM always at offset 75, etc. A device fills the blocks it's capable of, and sends every other field as 0 with its valid bit clear.
+**One fixed layout, the same on every device.** Every field has one offset, type, scale and meaning, everywhere. E.g., Latitude is always at offset 10, RPM always at offset 75, etc. A device fills the blocks it's capable of, and sends every other field as 0 with its valid bit clear.
 
-That makes one published table enough for everything:
+This makes one published table enough for everything:
 
 - **Apps with a byte-offset schema** (such as AutoX Data Logger's custom BLE sensor) are configured the same way for any Gnimu device.
 - **Gnimu tools** (such as Gnimu Monitor) parse one format.
-- **The all-in-one device** is just a device that fills every block. Nothing about the frame changes.
+- **An all-in-one device** is just a device that fills every block. Nothing about the frame changes.
 
-It's built to what fixed-layout consumers can read, and it's extended only in ways they ignore: fields an app isn't told to map, and characteristics it doesn't subscribe to.
+It's built to what fixed-layout consumers can read, and it's extended only in ways they'll ignore: fields an app isn't told to map, and characteristics it doesn't subscribe to.
 
 ---
 
 ## Rules
 
-These apply to every field, because any field may be mapped by an app.
+These apply to the frame and every field, because any field may be mapped by an app.
 
 - **Fixed length: 140 bytes.** Every notification is exactly this long. Fixed-layout consumers drop any other length, so the length is part of the spec version and never changes within it.
 - **Little-endian**, two's-complement signed values.
@@ -33,13 +33,13 @@ These apply to every field, because any field may be mapped by an app.
 
 ### Missing values
 
-A field the device doesn't have, or doesn't have yet, is **0** with its `valid` bit clear. Fixed-layout apps can't express "missing", and 0 is the least misleading placeholder. Gnimu tools must go by the `valid` bit, never by the value: latitude 0, longitude 0 is a real place.
+A field the device doesn't have, or doesn't have yet, is **0** with its `valid` bit clear. Fixed-layout apps can't express "missing", and 0 is the least misleading placeholder.
 
 ### Rate
 
 A device sends the frame at a fixed rate while a client is subscribed, whether or not anything changed. Each field carries its latest value.
 
-Apps like AutoX Data Logger take frames at any rate and align them to the GNSS source's cadence, so for that type of consumer the target is at or a little above the GNSS rate. Data that genuinely needs a higher rate, such as the IMU's full sample rate, goes on a [stream characteristic](#streams), not into the frame.
+Apps like AutoX Data Logger take frames at any rate and align them to the GNSS source's cadence, so for that type of consumer the target is at or above the GNSS rate. Data that genuinely needs a higher rate, such as the IMU's full sample rate, goes on a [stream characteristic](#streams), not into the frame.
 
 At 140 bytes and 30 Hz, the frame is about 4.2 kB/s.
 
@@ -79,9 +79,9 @@ The IMU values are in the vehicle frame, after the device's mounting correction 
 
 ### Filtering
 
-The IMU fields are the device's **filtered** output: mounting-corrected, then smoothed. Accelerations and rotation rates are filtered the same way. How a device filters is its own business and isn't part of the protocol.
+The IMU fields are assumed to be a device's **filtered** output, not raw values, unless explicitly designated as such in the device's documentation. How a device filters is its own business and isn't part of the protocol.
 
-The frame doesn't carry raw IMU values. Raw data at the sensor's full rate belongs on a [stream characteristic](#streams), if implemented.
+If raw IMU data at the sensor's full rate (100Hz, 400Hz, or higher) is to be sent, it belongs on a [stream characteristic](#streams).
 
 ---
 
@@ -107,10 +107,10 @@ A client checks a field's valid bit in its own block's mask. A device that doesn
 | Offset | Type | Field | Meaning |
 |---|---|---|---|
 | 0 | i32 | Device time | ms since boot, monotonic, never adjusted; wraps after 2^31 ms (about 24.8 days) |
-| 4 | u8 | Sequence | counts up by one per frame, wraps at 255; a gap means a lost frame |
+| 4 | u8 | Frame sequence | counts up by one per frame, wraps at 255; a gap means a lost frame |
 | 5 | u8 | Spec version | 1 |
-| 6 | u8 | Capabilities | bits for the blocks the device fills: 1 GNSS, 2 IMU, 4 vehicle, 8 power; 16–128 reserved |
-| 7 | u8 | State | 0 unknown, 1 starting, 2 running, 3 waiting, 4 fault |
+| 6 | u8 | Device capabilities | bits for the blocks the device fills: 1 GNSS, 2 IMU, 4 vehicle, 8 power; 16–128 reserved |
+| 7 | u8 | Device state | 0 unknown, 1 starting, 2 running, 3 waiting, 4 fault |
 <!-- /generated -->
 
 **Capabilities** says which blocks the device fills, one bit each:
@@ -123,7 +123,7 @@ A client checks a field's valid bit in its own block's mask. A device that doesn
 | 3 | 8 | Power | The power block |
 | 4–7 | | Reserved | Sent as 0 |
 
-It describes the device's hardware and build, not its current state: a GNSS device without a fix yet still sets the GNSS bit, and Gnimu-CAN sets the Vehicle bit while it waits for the car. That's what lets a client tell "no fix yet" from "no GNSS at all"; the blocks' valid masks say what's available right now, and the [schema's](#schema) fill masks say exactly which fields of each block the device provides. Like the valid masks, it's for Gnimu tools rather than for mapping in an app. The product name (Gnimu, Gnimu-CAN, ...) is in the advertised name, the schema and the Device Information Service.
+It describes the device's potential, not its current state: a GNSS device without a valid fix still sets the GNSS bit, and Gnimu-CAN sets the Vehicle bit while it waits for the car to respond or broadcast. Each block's valid mask says what's available right now, and the [schema's](#schema) fill masks say exactly which fields of each block the device will provide. Like the valid masks, this data is present for diagnostic tools rather than for mapping in an app. The product name (Gnimu, Gnimu-CAN, ...) is in the advertised name, the schema and the Device Information Service.
 
 **State** is the device's own condition, in terms that mean the same on every Gnimu device:
 
@@ -131,8 +131,8 @@ It describes the device's hardware and build, not its current state: a GNSS devi
 |---|---|---|---|---|
 | 0 | Unknown | Not set; a client treats it as "no information" | | |
 | 1 | Starting | Booting; data isn't expected yet | Starting | Starting |
-| 2 | Running | Normal operation | Running, with or without a fix | Polling: an ECU is answering |
-| 3 | Waiting | Up, but waiting for an outside source it can't do its job without | Not used | Waiting for the vehicle |
+| 2 | Running | Normal operation | Running, collecting data from the GNSS and IMU (if present), even if the data is not yet valid | Polling: an ECU is answering or broadcasting |
+| 3 | Waiting | Up, but waiting for an outside source it can't do its job without | Not used | Waiting for the vehicle to respond or broadcast |
 | 4 | Fault | Failed and not retrying | Fault | Fault |
 | 5–255 | Reserved | | | |
 
@@ -167,11 +167,11 @@ State is about the device, not its data. Whether a field holds a value is in its
 
 Lat/lon are `f64` because that's the only type a divisor-only scale can map to degrees at useful resolution.
 
-**When GNSS fields are valid.** The receiver's status flags have no fields of their own; they decide the valid bits instead:
+**Determining when GNSS fields are valid.** The receiver's status flags have no fields of their own; they decide the valid bits instead:
 
 | Fields | Valid when |
 |---|---|
-| Latitude, longitude, altitude, ground speed, speed accuracy | Fix type 2 or 3 (or 4), and the receiver reports gnssFixOK |
+| Latitude, longitude, altitude, ground speed, speed accuracy | Fix type 2, 3, or 4, and the receiver reports gnssFixOK |
 | Heading of motion | The receiver reports the heading valid. A device may also clear it below a minimum speed, where GNSS heading is meaningless. |
 | Horizontal and vertical accuracy, PDOP, fix type, satellites, GNSS epoch age | Whenever the receiver has produced a solution, fix or not |
 | UTC timestamp, time accuracy | The receiver reports the date and time valid, and the time fully resolved (leap seconds known) |
@@ -197,53 +197,65 @@ Lat/lon are `f64` because that's the only type a divisor-only scale can map to d
 
 ### Vehicle
 
-Standard channels with fixed meanings, whatever the source: an OBD-II PID, a manufacturer identifier, or a frame read off the bus. A vehicle profile maps its sources into these fields.
+Standard channels with fixed meanings, whatever the source: an OBD-II PID, a manufacturer identifier, or a value read off the bus. A vehicle profile maps its sources into these fields.
 
 <!-- generated:vehicle -->
 *Offset 71, 62 bytes.*
 
-| Bit | Offset | Type | Scale | Field | Unit |
-|---|---|---|---|---|---|
-| — | 71 | u32 | — | **Valid mask** | bit *n* set: the field on bit *n* holds a real value |
-| 0 | 75 | i16 | 1 | Engine speed | rpm |
-| 1 | 77 | i16 | 10 | Throttle position | % |
-| 2 | 79 | i16 | 10 | Accelerator pedal position | % |
-| 3 | 81 | i16 | 10 | Vehicle speed | km/h |
-| 4 | 83 | i16 | 10 | Coolant temperature | °C |
-| 5 | 85 | i16 | 10 | Intake air temperature | °C |
-| 6 | 87 | i16 | 10 | Ambient air temperature | °C |
-| 7 | 89 | i16 | 10 | Oil temperature | °C |
-| 8 | 91 | i16 | 10 | Oil pressure | kPa |
-| 9 | 93 | i16 | 10 | Boost pressure | kPa above atmospheric; negative under vacuum |
-| 10 | 95 | i16 | 1000 | Lambda | λ |
-| 11 | 97 | u8 | 1 | Fuel level | % |
-| 12 | 98 | u16 | 1 | Fuel pressure | kPa |
-| 13 | 100 | i16 | 1 | Brake pressure | kPa |
-| 14 | 102 | u8 | 1 | Brake switch | 0 released, 1 pressed |
-| 15 | 103 | u8 | 1 | Clutch switch | 0 released, 1 pressed |
-| 16 | 104 | i16 | 10 | Steering wheel angle | °, left positive |
-| 17 | 106 | i16 | 10 | Vehicle yaw rate | °/s, turning left positive; from the car's own sensor |
-| 18 | 108 | i16 | 1000 | Vehicle lateral acceleration | g, left positive; from the car's own sensor |
-| 19 | 110 | i16 | 1000 | Vehicle longitudinal acceleration | g, forward positive; from the car's own sensor |
-| 20 | 112 | i16 | 10 | Wheel speed, front left | km/h |
-| 21 | 114 | i16 | 10 | Wheel speed, front right | km/h |
-| 22 | 116 | i16 | 10 | Wheel speed, rear left | km/h |
-| 23 | 118 | i16 | 10 | Wheel speed, rear right | km/h |
-| 24 | 120 | i16 | 1 | Gear | −1 reverse, 0 neutral, 1 … |
-| 25 | 122 | i16 | *schema* | Aux 1 | defined by the device's schema |
-| 26 | 124 | i16 | *schema* | Aux 2 | defined by the device's schema |
-| 27 | 126 | i16 | *schema* | Aux 3 | defined by the device's schema |
-| 28 | 128 | i16 | *schema* | Aux 4 | defined by the device's schema |
-| — | 130 | 3 bytes | — | *Spare* | for fields added later |
+| Bit | Offset | Type | Scale | Field | Unit | Mode 01 PID |
+|---|---|---|---|---|---|---|
+| — | 71 | u32 | — | **Valid mask** | bit *n* set: the field on bit *n* holds a real value | — |
+| 0 | 75 | i16 | 1 | Engine speed | rpm | `0x0C` |
+| 1 | 77 | i16 | 10 | Throttle position | % | `0x11` |
+| 2 | 79 | i16 | 10 | Accelerator pedal position | % | `0x49` |
+| 3 | 81 | i16 | 10 | Vehicle speed | km/h | `0x0D` |
+| 4 | 83 | i16 | 10 | Coolant temperature | °C | `0x05` |
+| 5 | 85 | i16 | 10 | Intake air temperature | °C | `0x0F` |
+| 6 | 87 | i16 | 10 | Ambient air temperature | °C | `0x46` |
+| 7 | 89 | i16 | 10 | Oil temperature | °C | `0x5C` |
+| 8 | 91 | i16 | 10 | Transmission temperature | °C | — |
+| 9 | 93 | i16 | 10 | Charge air cooler temperature | °C | `0x77` |
+| 10 | 95 | i16 | 10 | Oil pressure | kPa | — |
+| 11 | 97 | i16 | 10 | Boost pressure | kPa above atmospheric; negative under vacuum | `0x0B` − `0x33` |
+| 12 | 99 | u8 | 1 | Fuel level | % | `0x2F` |
+| 13 | 100 | i16 | 1 | Brake pressure | kPa | — |
+| 14 | 102 | u8 | 1 | Brake switch | 0 released, 1 pressed | — |
+| 15 | 103 | u8 | 1 | Clutch switch | 0 released, 1 pressed | — |
+| 16 | 104 | i16 | 10 | Steering wheel angle | °, left positive | — |
+| 17 | 106 | i16 | 10 | Vehicle yaw rate | °/s, turning left positive; from the car's own sensor | — |
+| 18 | 108 | i16 | 1000 | Vehicle lateral acceleration | g, left positive; from the car's own sensor | — |
+| 19 | 110 | i16 | 1000 | Vehicle longitudinal acceleration | g, forward positive; from the car's own sensor | — |
+| 20 | 112 | i16 | 10 | Wheel speed, front left | km/h | — |
+| 21 | 114 | i16 | 10 | Wheel speed, front right | km/h | — |
+| 22 | 116 | i16 | 10 | Wheel speed, rear left | km/h | — |
+| 23 | 118 | i16 | 10 | Wheel speed, rear right | km/h | — |
+| 24 | 120 | i16 | 1 | Gear | −1 reverse, 0 neutral, 1 … | — |
+| 25 | 122 | i16 | *schema* | Aux 1 | defined by the device's schema | — |
+| 26 | 124 | i16 | *schema* | Aux 2 | defined by the device's schema | — |
+| 27 | 126 | i16 | *schema* | Aux 3 | defined by the device's schema | — |
+| 28 | 128 | i16 | *schema* | Aux 4 | defined by the device's schema | — |
+| — | 130 | 3 bytes | — | *Spare* | for fields added later | — |
 <!-- /generated -->
 
-**Boost** is sent ready to use: as the vehicle reports it, or computed by the device from manifold and barometric pressure, because byte-offset apps can't subtract one field from another.
+**Mode 01 PID** names the OBD-II Service 01 PID that measures the same quantity, to pin down what a field means. It isn't where the value has to come from: a manufacturer identifier or a value read off the bus fills the same field. The units match; the resolution may not (PID `0x11` steps by about 0.4 %, the field by 0.1 %). Fields marked — have no Service 01 equivalent and come only from manufacturer data. Gear is one of them: PID `0xA4` is the transmission's actual gear *ratio*, not the gear number.
+
+**Boost** is sent ready to use: as the vehicle reports it, or computed by the device from manifold and barometric pressure.
 
 **The vehicle's own yaw rate and accelerations** come from the car's stability-control sensors, read off the bus. They're separate from the IMU block, which is the device's own sensor, so a device with both sends both. They follow the same axis and sign conventions as the IMU.
 
 **Switches** are 0 or 1. Many cars report only whether the brake pedal is pressed, not the pressure, so the brake switch is separate from brake pressure. The clutch switch shows gear-change timing.
 
 The aux fields carry whatever a vehicle profile reads that has no standard field: the schema gives each one's name, unit and scale.
+
+**Aux or spare?** The block has both, and they do different jobs:
+
+| | Aux fields | Spare bytes |
+|---|---|---|
+| Meaning | Set by each device, declared in its [schema](#schema) | A future standard field, the same on every device |
+| Usable | Now, with no change to the spec | Only once the spec adds a field there |
+| App setup | Per device, from its schema | The same for every device, like any standard field |
+
+Aux lets a vehicle profile send something the spec doesn't cover without waiting for it. The spare bytes let the spec itself grow within v1. A quantity can start as an aux field on one profile and, if it proves broadly useful, become a standard field in a spare.
 
 ### Power
 
@@ -291,7 +303,7 @@ The aux fields carry whatever a vehicle profile reads that has no standard field
 
 Every Gnimu device also provides the standard BLE **Device Information Service** (`0x180A`), described [below](#device-information-service).
 
-The device advertises the service UUID, because AutoX Data Logger's scan only lists devices advertising the service UUID entered in its settings. The advertised name is the device type plus its 10-digit device ID, such as `Gnimu-CAN 0301821570`, as Gnimu does today.
+The device advertises the service UUID. The advertised name is the device type plus its 10-digit device ID, such as `Gnimu-CAN 0301821570`, as Gnimu does today.
 
 ### One client at a time
 
@@ -314,7 +326,7 @@ The layout is fixed, so the schema only has to say what varies by device: which 
 ```json
 {"v":1,"d":"Gnimu-CAN","r":20,
  "fill":{"vehicle":3,"power":1},
- "aux":{"aux_1":{"k":"Oil temp 2","u":"°C","s":10}}}
+ "aux":{"aux_1":{"k":"Ethanol content","u":"%","s":10}}}
 ```
 
 | Key | Meaning |
@@ -365,7 +377,7 @@ The standard BLE service `0x180A`, which generic BLE tools (nRF Connect, LightBl
 | Model Number | `0x2A24` | The device type name, such as `Gnimu-CAN` |
 | Serial Number | `0x2A25` | The 10-digit device ID, as in the advertised name |
 | Firmware Revision | `0x2A26` | The firmware version, such as `0.1.0` |
-| Hardware Revision | `0x2A27` | The board and hardware profile, such as `XIAO ESP32C6, 12V carrier v1` |
+| Hardware Revision | `0x2A27` | The board and hardware profile, such as `XIAO ESP32C6, 12V carrier v1.0` |
 
 A device that also emulates another protocol (Gnimu's RaceBox mode) may have to fill these with that protocol's expected values while it's in that mode. A device can only have one Device Information Service, so it always describes the mode the device is in.
 

@@ -58,11 +58,11 @@ enum class Field : uint8_t {
   IntakeAirTemp = 25,
   AmbientTemp = 26,
   OilTemp = 27,
-  OilPressure = 28,
-  Boost = 29,
-  Lambda = 30,
-  FuelLevel = 31,
-  FuelPressure = 32,
+  TransmissionTemp = 28,
+  ChargeAirCoolerTemp = 29,
+  OilPressure = 30,
+  Boost = 31,
+  FuelLevel = 32,
   BrakePressure = 33,
   BrakeSwitch = 34,
   ClutchSwitch = 35,
@@ -123,11 +123,11 @@ constexpr FieldInfo kFields[kFieldCount] = {
     {85, Type::I16, 10, 71, 5},  // intake_air_temp
     {87, Type::I16, 10, 71, 6},  // ambient_temp
     {89, Type::I16, 10, 71, 7},  // oil_temp
-    {91, Type::I16, 10, 71, 8},  // oil_pressure
-    {93, Type::I16, 10, 71, 9},  // boost
-    {95, Type::I16, 1000, 71, 10},  // lambda
-    {97, Type::U8, 1, 71, 11},  // fuel_level
-    {98, Type::U16, 1, 71, 12},  // fuel_pressure
+    {91, Type::I16, 10, 71, 8},  // transmission_temp
+    {93, Type::I16, 10, 71, 9},  // charge_air_cooler_temp
+    {95, Type::I16, 10, 71, 10},  // oil_pressure
+    {97, Type::I16, 10, 71, 11},  // boost
+    {99, Type::U8, 1, 71, 12},  // fuel_level
     {100, Type::I16, 1, 71, 13},  // brake_pressure
     {102, Type::U8, 1, 71, 14},  // brake_switch
     {103, Type::U8, 1, 71, 15},  // clutch_switch

@@ -69,6 +69,11 @@ def validate(spec):
             offset += size_of(spec, f)
         for bit, f in enumerate(fields):
             assert f.get("bit") == bit, "%s has bit %s, expected %d" % (f["key"], f.get("bit"), bit)
+            # Optional: the OBD-II Service 01 PID for the same quantity, as
+            # "0x0C", or "0x0B-0x33" for one PID minus another.
+            if "obd2_pid" in f:
+                assert re.fullmatch(r"0x[0-9A-F]{2}(-0x[0-9A-F]{2})?", f["obd2_pid"]), \
+                    "%s has obd2_pid %r" % (f["key"], f["obd2_pid"])
             assert f["type"] in CPP_TYPES, "%s has type %s" % (f["key"], f["type"])
             assert f["scale"] in (None, 1, 10, 100, 1000), "%s has scale %s" % (f["key"], f["scale"])
         need = len(fields) + spare["bytes"]
@@ -150,17 +155,29 @@ def vectors_inc(vectors):
     return "\n".join(out)
 
 
+def md_pid(f):
+    """A field's OBD-II PID cell: `0x0C`, or `0x0B` − `0x33`."""
+    if "obd2_pid" not in f:
+        return "—"
+    return " − ".join("`%s`" % p for p in f["obd2_pid"].split("-"))
+
+
 def md_table(spec, block):
-    rows = ["| Bit | Offset | Type | Scale | Field | Unit |", "|---|---|---|---|---|---|"]
+    # A block with any OBD-II PIDs gets a column for them.
+    pids = any("obd2_pid" in f for f in block["fields"])
+    extra = (" Mode 01 PID |", "---|") if pids else ("", "")
+    rows = ["| Bit | Offset | Type | Scale | Field | Unit |" + extra[0], "|---|---|---|---|---|---|" + extra[1]]
     for f in block["fields"]:
+        cell = (" %s |" % md_pid(f)) if pids else ""
         if f["type"] in MASK_TYPES:
-            rows.append("| — | %d | %s | — | **Valid mask** | bit *n* set: the field on bit *n* holds a real value |" % (
-                f["offset"], "u%d" % (spec["types"][f["type"]] * 8)))
+            rows.append("| — | %d | %s | — | **Valid mask** | bit *n* set: the field on bit *n* holds a real value |%s" % (
+                f["offset"], "u%d" % (spec["types"][f["type"]] * 8), cell))
         elif f["type"] == "spare":
-            rows.append("| — | %d | %d bytes | — | *Spare* | for fields added later |" % (f["offset"], f["bytes"]))
+            rows.append("| — | %d | %d bytes | — | *Spare* | for fields added later |%s" % (f["offset"], f["bytes"], cell))
         else:
             scale = "*schema*" if f["scale"] is None else str(f["scale"])
-            rows.append("| %d | %d | %s | %s | %s | %s |" % (f["bit"], f["offset"], f["type"], scale, f["name"], f["unit"]))
+            rows.append("| %d | %d | %s | %s | %s | %s |%s" % (
+                f["bit"], f["offset"], f["type"], scale, f["name"], f["unit"], cell))
     return "\n".join(rows)
 
 

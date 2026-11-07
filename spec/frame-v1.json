@@ -25,7 +25,7 @@
     },
     {
       "key": "sequence",
-      "name": "Sequence",
+      "name": "Frame sequence",
       "offset": 4,
       "type": "u8",
       "scale": 1,
@@ -41,7 +41,7 @@
     },
     {
       "key": "capabilities",
-      "name": "Capabilities",
+      "name": "Device capabilities",
       "offset": 6,
       "type": "u8",
       "scale": 1,
@@ -49,7 +49,7 @@
     },
     {
       "key": "state",
-      "name": "State",
+      "name": "Device state",
       "offset": 7,
       "type": "u8",
       "scale": 1,
@@ -303,7 +303,8 @@
           "offset": 75,
           "type": "i16",
           "scale": 1,
-          "unit": "rpm"
+          "unit": "rpm",
+          "obd2_pid": "0x0C"
         },
         {
           "bit": 1,
@@ -312,7 +313,8 @@
           "offset": 77,
           "type": "i16",
           "scale": 10,
-          "unit": "%"
+          "unit": "%",
+          "obd2_pid": "0x11"
         },
         {
           "bit": 2,
@@ -321,7 +323,8 @@
           "offset": 79,
           "type": "i16",
           "scale": 10,
-          "unit": "%"
+          "unit": "%",
+          "obd2_pid": "0x49"
         },
         {
           "bit": 3,
@@ -330,7 +333,8 @@
           "offset": 81,
           "type": "i16",
           "scale": 10,
-          "unit": "km/h"
+          "unit": "km/h",
+          "obd2_pid": "0x0D"
         },
         {
           "bit": 4,
@@ -339,7 +343,8 @@
           "offset": 83,
           "type": "i16",
           "scale": 10,
-          "unit": "°C"
+          "unit": "°C",
+          "obd2_pid": "0x05"
         },
         {
           "bit": 5,
@@ -348,7 +353,8 @@
           "offset": 85,
           "type": "i16",
           "scale": 10,
-          "unit": "°C"
+          "unit": "°C",
+          "obd2_pid": "0x0F"
         },
         {
           "bit": 6,
@@ -357,7 +363,8 @@
           "offset": 87,
           "type": "i16",
           "scale": 10,
-          "unit": "°C"
+          "unit": "°C",
+          "obd2_pid": "0x46"
         },
         {
           "bit": 7,
@@ -366,52 +373,56 @@
           "offset": 89,
           "type": "i16",
           "scale": 10,
-          "unit": "°C"
+          "unit": "°C",
+          "obd2_pid": "0x5C"
         },
         {
           "bit": 8,
-          "key": "oil_pressure",
-          "name": "Oil pressure",
+          "key": "transmission_temp",
+          "name": "Transmission temperature",
           "offset": 91,
           "type": "i16",
           "scale": 10,
-          "unit": "kPa"
+          "unit": "°C"
         },
         {
           "bit": 9,
-          "key": "boost",
-          "name": "Boost pressure",
+          "key": "charge_air_cooler_temp",
+          "name": "Charge air cooler temperature",
           "offset": 93,
           "type": "i16",
           "scale": 10,
-          "unit": "kPa above atmospheric; negative under vacuum"
+          "unit": "°C",
+          "obd2_pid": "0x77"
         },
         {
           "bit": 10,
-          "key": "lambda",
-          "name": "Lambda",
+          "key": "oil_pressure",
+          "name": "Oil pressure",
           "offset": 95,
           "type": "i16",
-          "scale": 1000,
-          "unit": "λ"
+          "scale": 10,
+          "unit": "kPa"
         },
         {
           "bit": 11,
-          "key": "fuel_level",
-          "name": "Fuel level",
+          "key": "boost",
+          "name": "Boost pressure",
           "offset": 97,
-          "type": "u8",
-          "scale": 1,
-          "unit": "%"
+          "type": "i16",
+          "scale": 10,
+          "unit": "kPa above atmospheric; negative under vacuum",
+          "obd2_pid": "0x0B-0x33"
         },
         {
           "bit": 12,
-          "key": "fuel_pressure",
-          "name": "Fuel pressure",
-          "offset": 98,
-          "type": "u16",
+          "key": "fuel_level",
+          "name": "Fuel level",
+          "offset": 99,
+          "type": "u8",
           "scale": 1,
-          "unit": "kPa"
+          "unit": "%",
+          "obd2_pid": "0x2F"
         },
         {
           "bit": 13,

@@ -14,7 +14,7 @@
 
 The Gnimu protocol defines how Gnimu-family devices stream telemetry over BLE (Bluetooth Low Energy): [Gnimu](https://github.com/c20d-us/Gnimu) (GNSS+IMU), [Gnimu-CAN](https://github.com/c20d-us/Gnimu-CAN) (vehicle CAN data), and a potential all-in-one device that merges them into one stream.
 
-At its core is one fixed-layout frame, the same on every device. Every field has an offset, type, scale and meaning. Every device also uses the same BLE UUIDs, so an app set up for one Gnimu device works with all of them. A device fills the blocks it has and leaves the rest zero and marked invalid. A single published table is enough to read any Gnimu device, in a Gnimu tool or in any app that maps fields by byte offset, such as [AutoX Data Logger](https://autoxdrivermod.com)'s custom BLE sensor.
+At its core is one fixed-layout frame, used by every device. Every field has an offset, type, scale and meaning. Every device also uses the same BLE UUIDs, so an app set up for one Gnimu device works with all of them. A device fills the blocks it has and leaves the rest zero and marked invalid. A single published table is enough to read any Gnimu device, in a Gnimu tool or in any app that maps fields by byte offset, such as [AutoX Data Logger](https://autoxdrivermod.com)'s custom BLE sensor.
 
 > [!NOTE]
 > **In progress.** v1 is complete enough to implement, with reference implementations and test vectors, but it isn't published and nothing depends on it yet, so it can still change. Gnimu-CAN will be the first device to send it. The Control and Stream characteristics are still to be defined.
