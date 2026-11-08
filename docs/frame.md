@@ -387,7 +387,16 @@ To be defined, under the [security rule](#security) above. It's where Gnimu's de
 
 ### Streams
 
-To be defined when the first one is built (most likely the IMU at its full sample rate). Each notification carries a batch of samples, stamped with the device time of the first sample and the sample period, so a client can place every sample exactly.
+To be defined when the first one is built (e.g., the IMU at full sample rate). Each notification carries a batch of samples, stamped with the device time of the first sample and the sample period, so a client can place every sample exactly.
+
+### Other transports
+
+To be defined if a device ever sends frames over something other than BLE, such as serial or HTTP. The frame has no checksum of its own, on purpose: BLE checks every packet at the link layer, so two bytes for an additional packet checksum would cost every app setup a longer packet length for no gained value. The plan for future non-BLE transports is an envelope around the frame instead:
+
+- **Record:** the frame followed by its CRC-32 (IEEE, as in zlib), 4 bytes little-endian.
+- **Serial:** each record [COBS-encoded](https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing) and followed by a `0x00` delimiter, so a receiver finds the next record after any lost or corrupted byte.
+- **File:** records back to back, or the serial form.
+- **HTTP or WebSocket:** records as they are; TCP and TLS already check the transfer, and the CRC covers the frame end to end.
 
 ---
 
