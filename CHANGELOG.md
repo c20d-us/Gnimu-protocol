@@ -12,4 +12,4 @@
 - A state byte with one meaning per value on every device: starting, running (normal operation), waiting (for an outside source it can't work without), fault. It describes the device; the valid masks describe the data.
 - One set of BLE UUIDs for every Gnimu device; Schema and Device info characteristics; the standard Device Information Service.
 - One client at a time. Control requires a bonded connection, with new bonds only in a window after power-up.
-- C++11 and Python reference encoders and decoders, and six test vectors.
+- C++11 and Python reference encoders and decoders, a Swift reference decoder (also a Swift package), and six test vectors.

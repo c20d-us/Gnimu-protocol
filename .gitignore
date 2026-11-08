@@ -7,6 +7,8 @@ __pycache__/
 
 # Build output
 build/
+.build/
+.swiftpm/
 
 # Editors
 .vscode/

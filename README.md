@@ -10,7 +10,7 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Spec: v1 in progress](https://img.shields.io/badge/spec-v1%20in%20progress-orange.svg)](docs/frame.md)
-[![Reference: C++11 and Python](https://img.shields.io/badge/reference-C%2B%2B11%20%7C%20Python-00599C.svg)](#reference-implementations)
+[![Reference: C++11, Python and Swift](https://img.shields.io/badge/reference-C%2B%2B11%20%7C%20Python%20%7C%20Swift-00599C.svg)](#reference-implementations)
 
 The Gnimu protocol defines how Gnimu-family devices stream telemetry over BLE (Bluetooth Low Energy): [Gnimu](https://github.com/c20d-us/Gnimu) (GNSS+IMU), [Gnimu-CAN](https://github.com/c20d-us/Gnimu-CAN) (vehicle CAN data), and a potential all-in-one device that merges them into one stream.
 
@@ -47,28 +47,34 @@ docs/frame.md            The specification (its field tables are generated from 
 include/gnimu_frame/     C++11 reference encoder and decoder, for firmware and host tools
   frame_v1.h             Encoder and Decoder classes (hand-written)
   layout_v1.h            Offsets, types, scales and mask bits (generated)
+Package.swift            The Swift reference as a package: for `swift test`, or as a dependency
+swift/Sources/GnimuFrame/  Swift reference decoder, for apps
+  FrameV1.swift          Frame decoder (hand-written)
+  LayoutV1.swift         Offsets, types, scales and mask bits (generated)
+swift/Tests/GnimuFrameTests/  Swift tests against the vectors (VectorsV1.swift is generated)
 tools/
   gnimu_frame.py         Python reference encoder and decoder
   generate.py            Validates the spec and regenerates everything derived from it
 vectors/v1.json          Test vectors: example frames with their values and exact bytes
-tests/                   Python and C++ tests against the vectors
+tests/                   Python and C++ tests against the vectors; run.sh runs all three languages
 ```
 
 ## Changing the spec
 
 1. Edit [`spec/frame-v1.json`](spec/frame-v1.json), and the prose in [`docs/frame.md`](docs/frame.md) if needed.
-2. Run `tools/generate.py`. It validates the layout (no gaps or overlaps, each block's mask first and its fields' bits in order, mask sizes, within the length cap) and regenerates the C++ layout header, the C++ test data and the doc's field tables.
+2. Run `tools/generate.py`. It validates the layout (no gaps or overlaps, each block's mask first and its fields' bits in order, mask sizes, within the length cap) and regenerates the C++ layout header and test data, the Swift layout and test data, and the doc's field tables.
 3. If the change alters any vector's bytes, run `tools/generate.py --update-vectors` and check the new hex is what you intended. The vectors are the fixed reference both encoders are tested against, so they only change on purpose.
 4. Run `tests/run.sh`.
 
-Python 3.9 or later and a C++11 compiler are all it needs; there are no packages to install.
+Python 3.9 or later and a C++11 compiler are all it needs; there are no packages to install. The Swift tests also run if a Swift 6.1 or later toolchain is installed, and are skipped, with a note, if not.
 
 ## Reference implementations
 
 - **C++** ([`include/gnimu_frame/frame_v1.h`](include/gnimu_frame/frame_v1.h)): header-only C++11 with no platform dependencies. Firmware copies the two headers in `include/gnimu_frame/` into its own source tree, and notes the spec version it copied.
 - **Python** ([`tools/gnimu_frame.py`](tools/gnimu_frame.py)): encode and decode by field name, for host tools and tests.
+- **Swift** ([`swift/Sources/GnimuFrame`](swift/Sources/GnimuFrame)): a decoder for apps that read Gnimu devices. It checks the length and spec version, reads each field in the spec's units, and gives `nil` for a field whose valid bit is clear. It tolerates what the spec lets vary within v1 (reserved capability bits and states, mask bits with no field yet). It needs Swift 6.1 or later. Depend on it as a package, or copy `FrameV1.swift` and `LayoutV1.swift` into the app and note the spec version, as firmware does with the C++ headers. It has no encoder.
 
-Both round half away from zero and saturate out-of-range values, and both produce exactly the bytes in [`vectors/v1.json`](vectors/v1.json).
+The C++ and Python encoders round half away from zero and saturate out-of-range values, and both produce exactly the bytes in [`vectors/v1.json`](vectors/v1.json). The Swift decoder is tested against what decoding those bytes gives.
 
 ## Testing
 
@@ -76,7 +82,7 @@ Both round half away from zero and saturate out-of-range values, and both produc
 tests/run.sh
 ```
 
-It checks the generated files are current, then runs the Python tests and the C++ tests (built as C++11 with warnings as errors) against the shared vectors. Run it before committing a spec change.
+It checks the generated files are current, then runs the Python tests, the C++ tests (built as C++11 with warnings as errors) and the Swift tests against the shared vectors. Run it before committing a spec change.
 
 ---
 
