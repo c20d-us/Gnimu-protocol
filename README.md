@@ -23,7 +23,7 @@ At its core is one fixed-layout frame, used by every device. Every field has an 
 
 ## The frame at a glance
 
-140 bytes, little-endian, sent at a fixed rate while a client is subscribed.
+140 bytes, little-endian, sent while a client is subscribed: once per GNSS solution by a device with GNSS, at a fixed rate by one without.
 
 | Block | Offset | Bytes | Contents |
 |---|---|---|---|

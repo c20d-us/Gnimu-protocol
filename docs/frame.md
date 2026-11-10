@@ -37,9 +37,13 @@ A field the device doesn't have, or doesn't have yet, is **0** with its `valid` 
 
 ### Rate
 
-A device sends the frame at a fixed rate while a client is subscribed, whether or not anything changed. Each field carries its latest value.
+GNSS sets the pace. While a client is subscribed:
 
-Apps like AutoX Data Logger take frames at any rate and align them to the GNSS source's cadence, so for that type of consumer the target is at or above the GNSS rate. Data that genuinely needs a higher rate, such as the IMU's full sample rate, goes on a [stream characteristic](#streams), not into the frame.
+- **A device that fills the GNSS block sends one frame per GNSS solution,** as soon as the solution arrives, so the frame rate is the receiver's navigation rate. This is how every GNSS device behaves and what apps that record GNSS data expect. The IMU and vehicle blocks in each frame carry their latest values at the moment it's sent: that's how they're aligned to the GNSS rate, whether their own source runs faster or slower. How a device arrives at that latest value (filtering, or averaging since the previous frame) is its own business, as with [filtering](#filtering).
+- **If GNSS solutions stop arriving, the device stops sending.** For lap timing, IMU and vehicle data without GNSS are of no use, so a GNSS device never sends frames paced by its own clock. A receiver without a fix still produces a solution every period, so "no fix yet" doesn't stop the frames: it shows in the fix type and the GNSS valid bits.
+- **A device without GNSS** (Gnimu-CAN) sends at a fixed rate of its own choosing, whether or not anything changed, with each field carrying its latest value. Apps like AutoX Data Logger align it to their own GNSS source's cadence, so the rate should be at or a little above that source's rate.
+
+Data that genuinely needs a higher rate than this, such as the IMU's full sample rate, goes on a [stream characteristic](#streams), not into the frame.
 
 At 140 bytes and 30 Hz, the frame is about 4.2 kB/s.
 
@@ -176,7 +180,7 @@ Lat/lon are `f64` because that's the only type a divisor-only scale can map to d
 | Horizontal and vertical accuracy, PDOP, fix type, satellites, GNSS epoch age | Whenever the receiver has produced a solution, fix or not |
 | UTC timestamp, time accuracy | The receiver reports the date and time valid, and the time fully resolved (leap seconds known) |
 
-**GNSS epoch age** ties the GNSS data to the device's clock. The device records its own time when each GNSS solution arrives, and the frame carries how long ago that was. So the epoch happened at *device time − epoch age*, at the moment given by the UTC timestamp. A client with both can map device time onto UTC exactly, and line up the IMU and vehicle data, which are stamped in device time, against each fix. The latency from the receiver's measurement to its output is small and fixed, and isn't included.
+**GNSS epoch age** ties the GNSS data to the device's clock. The device records its own time when each GNSS solution arrives, and the frame carries how long ago that was. So the epoch happened at *device time − epoch age*, at the moment given by the UTC timestamp. A client with both can map device time onto UTC exactly, and line up the IMU and vehicle data, which are stamped in device time, against each fix. The latency from the receiver's measurement to its output is small and fixed, and isn't included. Since a GNSS device sends each frame as its solution arrives, the epoch age is normally just the device's own processing delay, a few milliseconds.
 
 ### IMU
 
@@ -333,7 +337,7 @@ The layout is fixed, so the schema only has to say what varies by device: which 
 |---|---|
 | `v` | Spec version |
 | `d` | Product name |
-| `r` | Frame rate, Hz |
+| `r` | Frame rate, Hz: the GNSS navigation rate on a device that fills the GNSS block, the fixed frame rate otherwise |
 | `fill` | A **fill mask** per block the device fills, keyed by block name (`gnss`, `imu`, `vehicle`, `power`). Same bit layout as the block's valid mask, but it says which fields the device can provide at all, not which hold a value right now. Blocks the device doesn't fill are left out. |
 | `aux` | Aux field definitions, keyed by field (`aux_1` to `aux_4`): name `k`, unit `u`, scale `s` |
 
