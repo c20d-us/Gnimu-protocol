@@ -41,7 +41,7 @@ GNSS sets the pace. While a client is subscribed:
 
 - **A device that fills the GNSS block sends one frame per GNSS solution,** as soon as the solution arrives, so the frame rate is the receiver's navigation rate. This is how every GNSS device behaves and what apps that record GNSS data expect. The IMU and vehicle blocks in each frame carry their latest values at the moment it's sent: that's how they're aligned to the GNSS rate, whether their own source runs faster or slower. How a device arrives at that latest value (filtering, or averaging since the previous frame) is its own business, as with [filtering](#filtering).
 - **If GNSS solutions stop arriving, the device stops sending.** For lap timing, IMU and vehicle data without GNSS are of no use, so a GNSS device never sends frames paced by its own clock. A receiver without a fix still produces a solution every period, so "no fix yet" doesn't stop the frames: it shows in the fix type and the GNSS valid bits.
-- **A device without GNSS** (Gnimu-CAN) sends at a fixed rate of its own choosing, whether or not anything changed, with each field carrying its latest value. Apps like AutoX Data Logger align it to their own GNSS source's cadence, so the rate should be at or a little above that source's rate.
+- **A device without GNSS** (Gnimu-CAN) sends at a fixed rate of its own choosing, whether or not anything changed, with each field carrying its latest value. Apps like AutoX Data Logger align it to their own GNSS source's cadence, so the rate should be at or above that source's rate.
 
 Data that genuinely needs a higher rate than this, such as the IMU's full sample rate, goes on a [stream characteristic](#streams), not into the frame.
 
