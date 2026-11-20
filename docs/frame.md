@@ -377,7 +377,7 @@ The standard BLE service `0x180A`, which generic BLE tools (nRF Connect, LightBl
 
 | Characteristic | UUID | Value |
 |---|---|---|
-| Manufacturer Name | `0x2A29` | `Gnimu` |
+| Manufacturer Name | `0x2A29` | `Gnimu Labs` |
 | Model Number | `0x2A24` | The device type name, such as `Gnimu-CAN` |
 | Serial Number | `0x2A25` | The 10-digit device ID, as in the advertised name |
 | Firmware Revision | `0x2A26` | The firmware version, such as `0.1.0` |

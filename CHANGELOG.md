@@ -11,6 +11,6 @@
 - Metric units, speeds in km/h.
 - GNSS sets the pace: a device with GNSS sends one frame per GNSS solution, and stops if solutions stop; IMU and vehicle data ride along at their latest values. A device without GNSS sends at a fixed rate.
 - A state byte with one meaning per value on every device: starting, running (normal operation), waiting (for an outside source it can't work without), fault. It describes the device; the valid masks describe the data.
-- One set of BLE UUIDs for every Gnimu device; Schema and Device info characteristics; the standard Device Information Service.
+- One set of BLE UUIDs for every Gnimu device; Schema and Device info characteristics; the standard Device Information Service, with `Gnimu Labs` as the manufacturer.
 - One client at a time. Control requires a bonded connection, with new bonds only in a window after power-up.
 - C++11 and Python reference encoders and decoders, a Swift reference decoder (also a Swift package), and six test vectors.
