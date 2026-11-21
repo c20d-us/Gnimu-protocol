@@ -92,4 +92,4 @@ Copyright 2026 Chris Halstead. The specification, reference implementations, too
 
 The Gnimu firmware and hardware are separate works under their own licenses; see their repositories.
 
-The Gnimu name and logo are not covered by this license. See the [Gnimu branding usage policy](https://github.com/c20d-us/Gnimu-branding/blob/main/LICENSE.md).
+The Gnimu and Gnimu Labs names and logos are not covered by this license. See the [Gnimu Labs branding usage policy](https://github.com/c20d-us/Gnimu-branding/blob/main/LICENSE.md).
